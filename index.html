@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mental Health Expo Quiz</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(to bottom, lightblue, darkblue);
+            color: white;
+            text-align: center;
+        }
+        .quiz-container {
+            margin: 50px auto;
+            max-width: 600px;
+            background: rgba(0, 0, 50, 0.7);
+            padding: 20px;
+            border-radius: 10px;
+        }
+        .quiz-question {
+            margin-bottom: 20px;
+        }
+        input[type="submit"], button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        input[type="submit"]:hover, button:hover {
+            background-color: #45a049;
+        }
+        .leaderboard {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="quiz-container">
+        <h1>Mental Health Awareness Quiz</h1>
+        <form id="quiz-form">
+            <div class="quiz-question">
+                <p>1. Is mental health important for everyone?</p>
+                <label><input type="radio" name="q1" value="1"> True</label><br>
+                <label><input type="radio" name="q1" value="0"> False</label>
+            </div>
+            <!-- Repeat for 9 more questions -->
+            <input type="submit" value="Submit">
+        </form>
+        <div id="leaderboard" class="leaderboard" style="display: none;">
+            <h2>Leaderboard</h2>
+            <div id="leaderboard-content"></div>
+        </div>
+    </div>
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.1.0/firebase-analytics.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.1.0/firebase-database.js"></script>
+
+    <!-- Your Firebase Configuration -->
+    <script>
+        // Import and initialize Firebase app
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-analytics.js";
+        import { getDatabase, ref, push, onValue } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-database.js";
+
+        // Firebase configuration (your details)
+        const firebaseConfig = {
+            apiKey: "AIzaSyCW8I1Cr-4WGfbqaBWtz5A3ajAOZUqjJTc",
+            authDomain: "health-expo-quiz-test.firebaseapp.com",
+            projectId: "health-expo-quiz-test",
+            storageBucket: "health-expo-quiz-test.appspot.com",
+            messagingSenderId: "992897944471",
+            appId: "1:992897944471:web:ef0bc55963d3c10f1ad2d2",
+            measurementId: "G-DSR6BVM3V2"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const analytics = getAnalytics(app);
+        const database = getDatabase(app);
+
+        // Quiz Form Submission
+        const form = document.getElementById('quiz-form');
+        const leaderboard = document.getElementById('leaderboard');
+        const leaderboardContent = document.getElementById('leaderboard-content');
+
+        form.onsubmit = function (event) {
+            event.preventDefault();
+            let score = 0;
+            const answers = new FormData(form);
+
+            // Calculate score
+            answers.forEach((value, key) => {
+                score += parseInt(value);
+            });
+
+            let userName = prompt('Enter your name:');
+            let userTime = new Date().getTime(); // Time for tie-breaker
+
+            // Add user data to Firebase
+            const user = { name: userName, score: score, time: userTime };
+            const leaderboardRef = ref(database, 'leaderboard');
+            push(leaderboardRef, user);
+
+            // Listen for updates in the leaderboard and display
+            onValue(leaderboardRef, (snapshot) => {
+                let leaderboardData = [];
+                snapshot.forEach((childSnapshot) => {
+                    leaderboardData.push(childSnapshot.val());
+                });
+
+                // Sort by score, tie-break with time
+                leaderboardData.sort((a, b) => {
+                    if (a.score === b.score) {
+                        return a.time - b.time;
+                    }
+                    return b.score - a.score;
+                });
+
+                // Display leaderboard
+                leaderboardContent.innerHTML = leaderboardData.map((user, index) => {
+                    return `<p>${index + 1}. ${user.name} - Score: ${user.score}</p>`;
+                }).join('');
+
+                leaderboard.style.display = 'block';
+            });
+        }
+    </script>
+</body>
+</html>
